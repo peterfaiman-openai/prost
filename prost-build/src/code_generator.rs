@@ -459,15 +459,10 @@ impl<'b> CodeGenerator<'_, 'b> {
                 .push_str(&format!(" = {:?}", bytes_type.annotation()));
         }
 
-        // Handle field options for Edition 2023
         if self.syntax == Syntax::Edition2023 {
-            if let Some(ref options) = field.descriptor.options {
-                if options.deprecated.unwrap_or(false) {
-                    self.buf.push_str(", deprecated");
-                }
-                if options.packed.unwrap_or(false) {
-                    self.buf.push_str(", packed = \"true\"");
-                }
+            if let Some(field_options) = &field.descriptor.options {
+                // Edition 2023 does not support the packed field option at all.
+                debug_assert_eq!(field_options.packed, None);
             }
         }
 
@@ -480,13 +475,19 @@ impl<'b> CodeGenerator<'_, 'b> {
             Label::Required => self.buf.push_str(", required"),
             Label::Repeated => {
                 self.buf.push_str(", repeated");
-                if can_pack(&field.descriptor)
-                    && !field.descriptor.options.as_ref().map_or(
-                    self.syntax == Syntax::Proto3 || self.syntax == Syntax::Edition2023,
-                    |options| options.packed(),
-                )
-                {
-                    self.buf.push_str(", packed = \"false\"");
+                if can_pack(&field.descriptor) {
+                    let field_options = field.descriptor.options.as_ref();
+                    let pack = match self.syntax {
+                        Syntax::Proto2 => field_options.and_then(|o| o.packed).unwrap_or(false),
+                        Syntax::Proto3 => field_options.and_then(|o| o.packed).unwrap_or(true),
+                        // Edition 2023 supports packed via the field option
+                        // features.repeated_field_encoding, which prost does
+                        // not recognize. So we force on the default of packed.
+                        Syntax::Edition2023 => true,
+                    };
+                    if !pack {
+                        self.buf.push_str(", packed = \"false\"");
+                    }
                 }
             }
         }

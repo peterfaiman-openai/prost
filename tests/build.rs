@@ -125,6 +125,10 @@ fn main() {
         .compile_protos(&[src.join("option_struct.proto")], includes)
         .unwrap();
 
+    prost_build::Config::new()
+        .compile_protos(&[src.join("edition_2023.proto")], includes)
+        .unwrap();
+
     config
         .compile_protos(&[src.join("submessage_without_package.proto")], includes)
         .unwrap();

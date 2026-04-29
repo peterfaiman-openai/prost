@@ -95,6 +95,9 @@ mod option_struct;
 #[cfg(test)]
 mod result_struct;
 
+#[cfg(test)]
+mod edition_2023;
+
 /// Also for testing custom attributes, but on oneofs.
 ///
 /// Unfortunately, an OneOf field generates a companion module in the .rs file. There's no
